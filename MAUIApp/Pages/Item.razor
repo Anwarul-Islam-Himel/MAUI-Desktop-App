@@ -1,0 +1,57 @@
+﻿@page "/item"
+
+<EditForm Model="ItemModel" OnValidSubmit="Submit">
+    <MudTextField @bind-Value="ItemModel.Name" Label="Name"></MudTextField>
+    <MudTextField @bind-Value="ItemModel.Description" Label="Description"></MudTextField>
+    <MudButton Color="Color.Primary" ButtonType="ButtonType.Submit" Variant="Variant.Filled">Submit</MudButton>
+</EditForm>
+
+
+<MudTable Items="Items">
+    <ToolBarContent>
+        <MudText Typo="Typo.h4">Items</MudText>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Description</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Name</MudTd>
+        <MudTd>@context.Description</MudTd>
+    </RowTemplate>
+</MudTable>
+
+
+
+@code {
+    public ItemViewModel ItemModel { get; set; } = new ItemViewModel();
+    public List<ItemViewModel> Items{ get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Items = await _httpService.Get<List<ItemViewModel>>("/Item");
+        }
+        catch
+        {
+            Items = new List<ItemViewModel>();
+        }
+    }
+
+    private async Task Submit()
+    {
+        try
+        {
+            var response = await _httpService.Post<ItemViewModel>("/Item", ItemModel);
+            if(response != null)
+            {
+                Items.Add(response);
+                _snackbar.Add("Item Added Succesfully", Severity.Success);
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+}
