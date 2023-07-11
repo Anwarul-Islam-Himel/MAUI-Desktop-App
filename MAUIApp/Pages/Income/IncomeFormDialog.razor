@@ -1,0 +1,47 @@
+﻿﻿<MudDialog>
+    <DialogContent>
+        <EditForm Model="@Model" OnValidSubmit="@OnValidSubmit">
+            <DataAnnotationsValidator />
+            <MudDatePicker @bind-Date="Model.CreatedAt" Label="Date" Class="mb-4" Margin="Margin.Dense" Variant="Variant.Outlined" For="(() => Model.CreatedAt)"></MudDatePicker>
+            <MudTextField @bind-Value="Model.VoucerNumber" Label="Voucer Number" Class="mb-4" Margin="Margin.Dense" Variant="Variant.Outlined" For="(() => Model.VoucerNumber)"></MudTextField>
+            <MudTextField @bind-Value="Model.Description" Label="Description" Class="mb-4" Lines="2" Margin="Margin.Dense" Variant="Variant.Outlined" For="(() => Model.Description)"></MudTextField>
+            <MudSelect @bind-Value="Model.IncomeTypeId" T="int?" Variant="Variant.Outlined" Class="mb-4" Label="Income Type" Margin="Margin.Dense" Style="width:80px" For="(() => Model.IncomeTypeId)">
+                @foreach (var type in Types)
+                {
+                    <MudSelectItem Value="(int?)type.Id">@type.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudNumericField @bind-Value="Model.Amount" Label="Amount" Lines="2" Margin="Margin.Dense" Variant="Variant.Outlined" For="(() => Model.Amount)"></MudNumericField>
+            <div class="mt-4 d-flex justify-end">
+                <MudButton Class="form-cancel-btn" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Class="form-submit-btn" Color="Color.Primary" ButtonType="ButtonType.Submit">Save</MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public IncomeViewModel Model { get; set; } = new()
+    {
+        CreatedAt = DateTime.UtcNow
+    };
+
+    [Parameter]
+    public List<TypeViewModel> Types { get; set; } = new();
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void OnValidSubmit(EditContext context)
+    {
+        bool isValid = context.Validate();
+        if (isValid)
+        {
+            Model.IncomeTypeName = Types.Where(x => x.Id == Model.IncomeTypeId).Select(x => x.Name).FirstOrDefault();
+            MudDialog.Close(DialogResult.Ok(Model));
+        }
+    }
+}

@@ -1,9 +1,6 @@
 ﻿<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
-    <MudNavLink Href="/item" Match="NavLinkMatch.Prefix">Item</MudNavLink>
-    <MudNavGroup Title="Settings" Expanded="true">
-        <MudNavLink Href="/users" Match="NavLinkMatch.Prefix">Users</MudNavLink>
-        <MudNavLink Href="/security" Match="NavLinkMatch.Prefix">Security</MudNavLink>
-    </MudNavGroup>
-    <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink>
+    <MudNavLink Icon="@Icons.Material.Filled.Home" IconColor="Color.Primary" Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
+    <MudNavLink Icon="@Icons.Material.Filled.Input" IconColor="Color.Primary" Href="/income" Match="NavLinkMatch.All">Income</MudNavLink>
+    <MudNavLink Icon="@Icons.Material.Filled.Output" IconColor="Color.Primary" Href="/expenditure" Match="NavLinkMatch.Prefix">Expenditure</MudNavLink>
+    <MudNavLink Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Primary" Href="/type" Match="NavLinkMatch.Prefix">Type</MudNavLink>
 </MudNavMenu>

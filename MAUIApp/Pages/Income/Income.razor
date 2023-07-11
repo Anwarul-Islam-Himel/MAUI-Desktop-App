@@ -1,0 +1,179 @@
+﻿@page "/income"
+
+<MudTable Items="SelectedIncomes" T="IncomeViewModel" FixedHeader="true" Dense="true" Hover="true" Height="800px">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6" Color="Color.Success">Income</MudText>
+        <MudSpacer/>
+        <MudSelect @bind-Value="_selectedMonth" T="MonthEnum" Variant="Variant.Outlined" Label="Month" Margin="Margin.Dense" Style="width:80px" For="(() => _selectedMonth)">
+            @foreach(MonthEnum month in Enum.GetValues(typeof(MonthEnum)))
+            {
+                <MudSelectItem Value="month">@month.ToString()</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField @bind-Value="_selectedYear" Label="Year" Margin="Margin.Dense" Class="mx-lg-4" Variant="Variant.Outlined" Style="width:80px" For="(() => _selectedYear)" />
+        <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Medium" OnClick="ApplyFilter"/>
+        <MudSpacer />
+    </ToolBarContent>
+    <ColGroup>
+        <col />
+        <col />
+        <col />
+        <col />
+        <col />
+        <col style="width:80px" />
+    </ColGroup>
+    <HeaderContent>
+        <MudTd>Date</MudTd>
+        <MudTd>Voucer Number</MudTd>
+        <MudTd>Description</MudTd>
+        <MudTd>Income Type</MudTd>
+        <MudTd>Amount</MudTd>
+        <MudTd><MudButton Size="Size.Small" Color="Color.Success" Variant="Variant.Filled" OnClick="OpenIncomeDialogModal">New</MudButton></MudTd>
+    </HeaderContent>
+    <NoRecordsContent>
+        <MudText Typo="Typo.h5" Class="mud-text-secondary mt-16 mb-16">No Contents</MudText>
+    </NoRecordsContent>
+    <RowTemplate>
+        <MudTd>@context.CreatedAt.Value.ToString("dd//MM/yyyy")</MudTd>
+        <MudTd>@context.VoucerNumber</MudTd>
+        <MudTd>@context.Description</MudTd>
+        <MudTd>@context.IncomeTypeName</MudTd>
+        <MudTd Style="color:green">@context.Amount</MudTd>
+        <MudTd>
+            <div class="d-flex">
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="() => EditIncome(context)" />
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteIncome(context)" />
+            </div>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    public List<IncomeViewModel> Incomes{ get; set; }
+    public List<IncomeViewModel> SelectedIncomes{ get; set; }
+    public List<TypeViewModel> Types{ get; set; }
+    private MonthEnum _selectedMonth { get; set; }
+    private DateTime _currentDate { get; set; } = DateTime.UtcNow;
+    private int _selectedYear{ get; set; }
+    private string emptyValue = string.Empty;
+
+    private DialogOptions _dialogOption = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true, CloseButton = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Incomes = await _httpService.Get<List<IncomeViewModel>>("/api/Income/get");
+            Types = await _httpService.Get<List<TypeViewModel>>("/api/Type/get");
+            _selectedMonth = (MonthEnum)_currentDate.Month;
+            _selectedYear = _currentDate.Year;
+            SelectedIncomes = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+        }
+        catch
+        {
+            Incomes = new List<IncomeViewModel>();
+            Types = new List<TypeViewModel>();
+        }
+
+    }
+
+    private async Task OpenIncomeDialogModal()
+    {
+        try
+        {
+            var dialogData = new DialogParameters
+                {
+                    ["Types"] = Types.Where(x=>x.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Income).ToList()
+                };
+            var dialog = _dialogService.Show<IncomeFormDialog>("New income", dialogData, _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as IncomeViewModel;
+                var response = await _httpService.Post<IncomeViewModel>("/api/Income/post", data);
+                if(response != null)
+                {
+                    data.Id = response.Id;
+                    Incomes.Add(data);
+                    SelectedIncomes.Add(data);
+                    _snackbar.Add("Added Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private async Task EditIncome(IncomeViewModel model)
+    {
+        try
+        {
+            var dialogData = new DialogParameters
+                {
+                    ["Model"] = model,
+                    ["Types"] = Types.Where(x => x.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Income).ToList()
+                };
+            var dialog = _dialogService.Show<IncomeFormDialog>("Update income", dialogData, _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as IncomeViewModel;
+                var response = await _httpService.Put<IncomeViewModel>($"/api/Income/put/{model.Id}", data);
+                if (response != null)
+                {
+                    int index = SelectedIncomes.IndexOf(model);
+                    SelectedIncomes[index] = data;
+                    _snackbar.Add("Update Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+
+    private async Task DeleteIncome(IncomeViewModel model)
+    {
+        try
+        {
+            var dialog = _dialogService.Show<DeleteConfirmationDialog>("Delete");
+            var result = await dialog.Result;
+
+            if (!result.Canceled)
+            {
+                var response = await _httpService.Delete<bool>($"/api/Income/delete/{model.Id}");
+                if (response)
+                {
+                    Incomes.Remove(model);
+                    SelectedIncomes.Remove(model);
+                    _snackbar.Add("Delete Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        SelectedIncomes = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+    }
+}

@@ -1,0 +1,239 @@
+﻿@page "/type"
+
+<MudGrid>
+    <MudItem xs="6">
+        <MudPaper Elevation="4" Class="mt-4">
+            <MudTable Items="IncomeTypes" T="TypeViewModel" Loading="loadingIncomeTypes" Dense="true" Hover="true">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Income Type</MudText>
+                </ToolBarContent>
+                <ColGroup>
+                  <col/>
+                  <col/>
+                  <col style="width:80px"/>
+                </ColGroup>
+                <HeaderContent>
+                    <MudTd>Name</MudTd>
+                    <MudTd>Description</MudTd>
+                    <MudTd><MudButton Size="Size.Small" Color="Color.Success" Variant="Variant.Filled" OnClick="OpenIncomeTypeDialogModal">New</MudButton></MudTd>
+                </HeaderContent>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.h5" Class="mud-text-secondary mt-16 mb-16">No Contents</MudText>
+                </NoRecordsContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.Description</MudTd>
+                    <MudTd>
+                        <div class="d-flex">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="() => EditType(context)" />
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteType(context)" />
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6">
+        <MudPaper Elevation="4" Class="mt-4">
+            <MudTable Items="ExpenditureTypes" T="TypeViewModel" Loading="loadingExpenditureTypes" Dense="true" Hover="true">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Expenditure Type</MudText>
+                </ToolBarContent>
+                <ColGroup>
+                    <col />
+                    <col />
+                    <col style="width:80px" />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTd>Name</MudTd>
+                    <MudTd>Description</MudTd>
+                    <MudTd><MudButton Size="Size.Small" Color="Color.Success" Variant="Variant.Filled" OnClick="OpenExpenditureTypeDialogModal">New</MudButton></MudTd>
+                </HeaderContent>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.h5" Class="mud-text-secondary mt-16 mb-16">No Contents</MudText>
+                </NoRecordsContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.Description</MudTd>
+                    <MudTd>
+                        <div class="d-flex">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="() => EditType(context)" />
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteType(context)" />
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+ 
+
+
+@code {
+    public List<TypeViewModel> AllTypes{ get; set; }
+    public List<TypeViewModel> IncomeTypes { get; set; }
+    public List<TypeViewModel> ExpenditureTypes { get; set; }
+    public bool loadingIncomeTypes { get; set; } = true;
+    public bool loadingExpenditureTypes { get; set; } = true;
+
+    private DialogOptions _dialogOption = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true, CloseButton = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            AllTypes = await _httpService.Get<List<TypeViewModel>>("/api/Type/get");
+            IncomeTypes = AllTypes.Where(x => x.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Income).ToList();
+            ExpenditureTypes = AllTypes.Where(x => x.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Expenditure).ToList();
+        }
+        catch
+        {
+            AllTypes = new List<TypeViewModel>();
+            IncomeTypes = new List<TypeViewModel>();
+            ExpenditureTypes = new List<TypeViewModel>();
+        }
+        finally
+        {
+            loadingIncomeTypes = false;
+            loadingExpenditureTypes = false;
+        }
+    }
+
+    private async Task OpenIncomeTypeDialogModal()
+    {
+        try
+        {
+            var dialog = _dialogService.Show<TypeFormDialog>("New income type", _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as TypeViewModel;
+                data.IncomeOrExpenditureEnum = IncomeOrExpenditureEnum.Income;
+                var response = await _httpService.Post<TypeViewModel>("/api/Type/post", data);
+                if (response != null)
+                {
+                    AllTypes.Add(response);
+                    IncomeTypes.Add(response);
+                    _snackbar.Add("Added Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+               
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private async Task OpenExpenditureTypeDialogModal()
+    {
+        try
+        {
+            var dialog = _dialogService.Show<TypeFormDialog>("New expenditure type", _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as TypeViewModel;
+                data.IncomeOrExpenditureEnum = IncomeOrExpenditureEnum.Expenditure;
+                var response = await _httpService.Post<TypeViewModel>("/api/Type/post", data);
+                if (response != null)
+                {
+                    AllTypes.Add(response);
+                    ExpenditureTypes.Add(response);
+                    _snackbar.Add("Added Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private async Task EditType(TypeViewModel model)
+    {
+        try
+        {
+            var dialogData = new DialogParameters
+                {
+                    ["Model"] = model
+                };
+            var dialog = _dialogService.Show<TypeFormDialog>("Update", dialogData, _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as TypeViewModel;
+                var response = await _httpService.Put<TypeViewModel>($"/api/Type/put/{model.Id}", data);
+                if (response != null)
+                {
+                    var index = AllTypes.IndexOf(model);
+                    AllTypes[index] = response;
+                    if(model.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Income)
+                    {
+                        var x = IncomeTypes.IndexOf(model);
+                        IncomeTypes[x] = response;
+                    }
+                    else
+                    {
+                        var x = ExpenditureTypes.IndexOf(model);
+                        ExpenditureTypes[x] = response;
+                    }
+                    _snackbar.Add("Update Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private async Task DeleteType(TypeViewModel model)
+    {
+        try
+        {
+            var dialog = _dialogService.Show<DeleteConfirmationDialog>("Delete");
+            var result = await dialog.Result;
+
+            if (!result.Canceled)
+            {
+                var response = await _httpService.Delete<bool>($"/api/Type/delete/{model.Id}");
+                if (response)
+                {
+                    AllTypes.Remove(model);
+                    if(model.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Income)
+                    {
+                        IncomeTypes.Remove(model);
+                    }
+                    else
+                    {
+                        ExpenditureTypes.Remove(model);
+                    }
+                    _snackbar.Add("Delete Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+}

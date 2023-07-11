@@ -1,0 +1,179 @@
+﻿@page "/expenditure"
+
+<MudTable Items="SelectedExpenditure" T="ExpenditureViewModel" FixedHeader="true" Dense="true" Hover="true" Height="800px">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6" Color="Color.Error">Expenditure</MudText>
+        <MudSpacer />
+        <MudSelect @bind-Value="_selectedMonth" T="MonthEnum" Variant="Variant.Outlined" Label="Month" Margin="Margin.Dense" Style="width:80px" For="(() => _selectedMonth)">
+            @foreach (MonthEnum month in Enum.GetValues(typeof(MonthEnum)))
+            {
+                <MudSelectItem Value="month">@month.ToString()</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField @bind-Value="_selectedYear" Label="Year" Margin="Margin.Dense" Class="mx-lg-4" Variant="Variant.Outlined" Style="width:80px" For="(() => _selectedYear)" />
+        <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Medium" OnClick="ApplyFilter" />
+        <MudSpacer />
+    </ToolBarContent>
+    <ColGroup>
+        <col />
+        <col />
+        <col />
+        <col />
+        <col />
+        <col style="width:80px" />
+    </ColGroup>
+    <HeaderContent>
+        <MudTd>Date</MudTd>
+        <MudTd>Voucer Number</MudTd>
+        <MudTd>Description</MudTd>
+        <MudTd>Income Type</MudTd>
+        <MudTd>Amount</MudTd>
+        <MudTd><MudButton Size="Size.Small" Color="Color.Success" Variant="Variant.Filled" OnClick="OpenExpenditureDialogModal">New</MudButton></MudTd>
+    </HeaderContent>
+    <NoRecordsContent>
+        <MudText Typo="Typo.h5" Class="mud-text-secondary mt-16 mb-16">No Contents</MudText>
+    </NoRecordsContent>
+    <RowTemplate>
+        <MudTd>@context.CreatedAt.Value.ToString("dd//MM/yyyy")</MudTd>
+        <MudTd>@context.VoucerNumber</MudTd>
+        <MudTd>@context.Description</MudTd>
+        <MudTd>@context.ExpenditureTypeName</MudTd>
+        <MudTd Style="color:red">@context.Amount</MudTd>
+        <MudTd>
+            <div class="d-flex">
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="() => EditExpenditure(context)" />
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteExpenditure(context)" />
+            </div>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    public List<ExpenditureViewModel> Incomes { get; set; }
+    public List<ExpenditureViewModel> SelectedExpenditure { get; set; }
+    public List<TypeViewModel> Types { get; set; }
+    private MonthEnum _selectedMonth { get; set; }
+    private DateTime _currentDate { get; set; } = DateTime.UtcNow;
+    private int _selectedYear { get; set; }
+    private string emptyValue = string.Empty;
+
+    private DialogOptions _dialogOption = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true, CloseButton = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Incomes = await _httpService.Get<List<ExpenditureViewModel>>("/api/Expenditure/get");
+            Types = await _httpService.Get<List<TypeViewModel>>("/api/Type/get");
+            _selectedMonth = (MonthEnum)_currentDate.Month;
+            _selectedYear = _currentDate.Year;
+            SelectedExpenditure = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+        }
+        catch
+        {
+            Incomes = new List<ExpenditureViewModel>();
+            Types = new List<TypeViewModel>();
+        }
+
+    }
+
+    private async Task OpenExpenditureDialogModal()
+    {
+        try
+        {
+            var dialogData = new DialogParameters
+                {
+                    ["Types"] = Types.Where(x => x.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Expenditure).ToList()
+                };
+            var dialog = _dialogService.Show<ExpenditureFormDialog>("New Expenditure", dialogData, _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as ExpenditureViewModel;
+                var response = await _httpService.Post<ExpenditureViewModel>("/api/Expenditure/post", data);
+                if (response != null)
+                {
+                    data.Id = response.Id;
+                    Incomes.Add(data);
+                    SelectedExpenditure.Add(data);
+                    _snackbar.Add("Added Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private async Task EditExpenditure(ExpenditureViewModel model)
+    {
+        try
+        {
+            var dialogData = new DialogParameters
+                {
+                    ["Model"] = model,
+                    ["Types"] = Types.Where(x => x.IncomeOrExpenditureEnum == IncomeOrExpenditureEnum.Expenditure).ToList()
+                };
+            var dialog = _dialogService.Show<ExpenditureFormDialog>("Update Expenditure", dialogData, _dialogOption);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var data = result.Data as ExpenditureViewModel;
+                var response = await _httpService.Put<ExpenditureViewModel>($"/api/Expenditure/put/{model.Id}", data);
+                if (response != null)
+                {
+                    int index = SelectedExpenditure.IndexOf(model);
+                    SelectedExpenditure[index] = data;
+                    _snackbar.Add("Update Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+
+    private async Task DeleteExpenditure(ExpenditureViewModel model)
+    {
+        try
+        {
+            var dialog = _dialogService.Show<DeleteConfirmationDialog>("Delete");
+            var result = await dialog.Result;
+
+            if (!result.Canceled)
+            {
+                var response = await _httpService.Delete<bool>($"/api/Expenditure/delete/{model.Id}");
+                if (response)
+                {
+                    Incomes.Remove(model);
+                    SelectedExpenditure.Remove(model);
+                    _snackbar.Add("Delete Succesfully", Severity.Success);
+                }
+                else
+                {
+                    _snackbar.Add("Something wrong", Severity.Error);
+                }
+            }
+        }
+        catch
+        {
+            _snackbar.Add("Something wrong", Severity.Error);
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        SelectedExpenditure = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+    }
+}

@@ -1,7 +1,50 @@
 ﻿@page "/"
 
-<h1>Hello, world!</h1>
+<MudGrid Class="mt-6">
+    <MudItem xs="4">
+        <MudSelect @bind-Value="_selectedMonth" T="MonthEnum" Variant="Variant.Outlined" Label="Month" Margin="Margin.Dense" Style="width:40px" For="(() => _selectedMonth)">
+            @foreach (MonthEnum month in Enum.GetValues(typeof(MonthEnum)))
+            {
+                <MudSelectItem Value="month">@month.ToString()</MudSelectItem>
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="4">
+        <MudTextField @bind-Value="_selectedYear" Label="Year" Margin="Margin.Dense" Class="mx-lg-4" Variant="Variant.Outlined" Style="width:80px" For="(() => _selectedYear)" />
+    </MudItem>
+    <MudItem xs="4">
+        <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Medium" OnClick="ApplyFilter" />
+    </MudItem>
+</MudGrid>
 
-Welcome to your new app.
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+
+<MudGrid>
+    <MudItem xs="6">
+        <MudPaper Elevation="4">
+            <MudText Typo="Typo.h5" Color="Color.Success">Income</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6">
+        <MudPaper Elevation="4">
+            <MudText Typo="Typo.h5" Color="Color.Error">Expenditure</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem>
+        <MudPaper Elevation="4">
+            <MudText Typo="Typo.h5">Total</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code{
+    private MonthEnum _selectedMonth { get; set; }
+    private DateTime _currentDate { get; set; } = DateTime.UtcNow;
+    private int _selectedYear { get; set; }
+
+    private void ApplyFilter()
+    {
+        
+    }
+}
+

@@ -1,0 +1,32 @@
+﻿﻿<MudDialog>
+    <DialogContent>
+        <EditForm Model="@Model" OnValidSubmit="@OnValidSubmit">
+            <DataAnnotationsValidator />
+            <MudTextField @bind-Value="Model.Name" Label="Name" Class="mb-4"  Margin="Margin.Dense" Variant="Variant.Outlined" For="(() => Model.Name)"></MudTextField>
+            <MudTextField @bind-Value="Model.Description" Label="Description" Lines="2" Margin="Margin.Dense" Variant="Variant.Outlined" For="(() => Model.Description)"></MudTextField>
+            <div class="mt-4 d-flex justify-end">
+                <MudButton Class="form-cancel-btn" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Class="form-submit-btn" Color="Color.Primary" ButtonType="ButtonType.Submit">Save</MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public TypeViewModel Model { get; set; } = new();
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void OnValidSubmit(EditContext context)
+    {
+        bool isValid = context.Validate();
+        if (isValid)
+        {
+            MudDialog.Close(DialogResult.Ok(Model));
+        }
+    }
+}
