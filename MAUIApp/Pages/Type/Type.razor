@@ -105,7 +105,7 @@
         {
             var dialog = _dialogService.Show<TypeFormDialog>("New income type", _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as TypeViewModel;
                 data.IncomeOrExpenditureEnum = IncomeOrExpenditureEnum.Income;
@@ -135,7 +135,7 @@
         {
             var dialog = _dialogService.Show<TypeFormDialog>("New expenditure type", _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as TypeViewModel;
                 data.IncomeOrExpenditureEnum = IncomeOrExpenditureEnum.Expenditure;
@@ -169,7 +169,7 @@
                 };
             var dialog = _dialogService.Show<TypeFormDialog>("Update", dialogData, _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as TypeViewModel;
                 var response = await _httpService.Put<TypeViewModel>($"/api/Type/put/{model.Id}", data);

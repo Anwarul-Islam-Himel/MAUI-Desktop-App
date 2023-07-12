@@ -94,7 +94,7 @@
                 };
             var dialog = _dialogService.Show<IncomeFormDialog>("New income", dialogData, _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as IncomeViewModel;
                 var response = await _httpService.Post<IncomeViewModel>("/api/Income/post", data);
@@ -129,7 +129,7 @@
                 };
             var dialog = _dialogService.Show<IncomeFormDialog>("Update income", dialogData, _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as IncomeViewModel;
                 var response = await _httpService.Put<IncomeViewModel>($"/api/Income/put/{model.Id}", data);

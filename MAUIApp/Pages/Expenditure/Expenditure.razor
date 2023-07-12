@@ -92,7 +92,7 @@
                 };
             var dialog = _dialogService.Show<ExpenditureFormDialog>("New Expenditure", dialogData, _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as ExpenditureViewModel;
                 var response = await _httpService.Post<ExpenditureViewModel>("/api/Expenditure/post", data);
@@ -127,7 +127,7 @@
                 };
             var dialog = _dialogService.Show<ExpenditureFormDialog>("Update Expenditure", dialogData, _dialogOption);
             var result = await dialog.Result;
-            if (!result.Cancelled)
+            if (!result.Canceled)
             {
                 var data = result.Data as ExpenditureViewModel;
                 var response = await _httpService.Put<ExpenditureViewModel>($"/api/Expenditure/put/{model.Id}", data);
