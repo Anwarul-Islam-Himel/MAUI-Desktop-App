@@ -1,6 +1,6 @@
 ﻿@page "/expenditure"
 
-<MudTable Items="SelectedExpenditure" T="ExpenditureViewModel" FixedHeader="true" Dense="true" Hover="true" Height="800px">
+<MudTable Items="SelectedExpenditure" T="ExpenditureViewModel" Dense="true" Hover="true">
     <ToolBarContent>
         <MudText Typo="Typo.h6" Color="Color.Error">Expenditure</MudText>
         <MudSpacer />
@@ -47,15 +47,19 @@
         </MudTd>
     </RowTemplate>
 </MudTable>
+<MudPaper Elevation="4" Class="mt-3">
+    <MudText Typo="Typo.h4">Total : @_expenditure</MudText>
+</MudPaper>
 
 @code {
-    public List<ExpenditureViewModel> Incomes { get; set; }
+    public List<ExpenditureViewModel> Expenditures { get; set; }
     public List<ExpenditureViewModel> SelectedExpenditure { get; set; }
     public List<TypeViewModel> Types { get; set; }
     private MonthEnum _selectedMonth { get; set; }
     private DateTime _currentDate { get; set; } = DateTime.UtcNow;
     private int _selectedYear { get; set; }
     private string emptyValue = string.Empty;
+    private double _expenditure { get; set; }
 
     private DialogOptions _dialogOption = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true, CloseButton = true };
 
@@ -63,15 +67,16 @@
     {
         try
         {
-            Incomes = await _httpService.Get<List<ExpenditureViewModel>>("/api/Expenditure/get");
+            Expenditures = await _httpService.Get<List<ExpenditureViewModel>>("/api/Expenditure/get");
             Types = await _httpService.Get<List<TypeViewModel>>("/api/Type/get");
             _selectedMonth = (MonthEnum)_currentDate.Month;
             _selectedYear = _currentDate.Year;
-            SelectedExpenditure = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+            SelectedExpenditure = Expenditures.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+            _expenditure = SelectedExpenditure.Select(x => x.Amount).Sum();
         }
         catch
         {
-            Incomes = new List<ExpenditureViewModel>();
+            Expenditures = new List<ExpenditureViewModel>();
             Types = new List<TypeViewModel>();
         }
 
@@ -94,8 +99,9 @@
                 if (response != null)
                 {
                     data.Id = response.Id;
-                    Incomes.Add(data);
+                    Expenditures.Add(data);
                     SelectedExpenditure.Add(data);
+                    _expenditure = SelectedExpenditure.Select(x => x.Amount).Sum();
                     _snackbar.Add("Added Succesfully", Severity.Success);
                 }
                 else
@@ -129,6 +135,7 @@
                 {
                     int index = SelectedExpenditure.IndexOf(model);
                     SelectedExpenditure[index] = data;
+                    _expenditure = SelectedExpenditure.Select(x => x.Amount).Sum();
                     _snackbar.Add("Update Succesfully", Severity.Success);
                 }
                 else
@@ -156,8 +163,9 @@
                 var response = await _httpService.Delete<bool>($"/api/Expenditure/delete/{model.Id}");
                 if (response)
                 {
-                    Incomes.Remove(model);
+                    Expenditures.Remove(model);
                     SelectedExpenditure.Remove(model);
+                    _expenditure = SelectedExpenditure.Select(x => x.Amount).Sum();
                     _snackbar.Add("Delete Succesfully", Severity.Success);
                 }
                 else
@@ -174,6 +182,7 @@
 
     private void ApplyFilter()
     {
-        SelectedExpenditure = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+        SelectedExpenditure = Expenditures.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+        _expenditure = SelectedExpenditure.Select(x => x.Amount).Sum();
     }
 }

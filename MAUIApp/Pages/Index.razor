@@ -1,6 +1,6 @@
 ﻿@page "/"
 
-<MudGrid Class="mt-6">
+<MudGrid Class="mt-6 d-flex justify-content-center">
     <MudItem xs="4">
         <MudSelect @bind-Value="_selectedMonth" T="MonthEnum" Variant="Variant.Outlined" Label="Month" Margin="Margin.Dense" Style="width:40px" For="(() => _selectedMonth)">
             @foreach (MonthEnum month in Enum.GetValues(typeof(MonthEnum)))
@@ -18,33 +18,63 @@
 </MudGrid>
 
 
-
-<MudGrid>
+<MudGrid Class="ma-4">
     <MudItem xs="6">
-        <MudPaper Elevation="4">
+        <MudPaper Elevation="4" Style="height: 80px">
             <MudText Typo="Typo.h5" Color="Color.Success">Income</MudText>
+            <MudText Typo="Typo.h5">@_income</MudText>
         </MudPaper>
     </MudItem>
     <MudItem xs="6">
         <MudPaper Elevation="4">
             <MudText Typo="Typo.h5" Color="Color.Error">Expenditure</MudText>
+            <MudText Typo="Typo.h5">@_expenditure</MudText>
         </MudPaper>
     </MudItem>
-    <MudItem>
+    <MudItem Class="d-flex justify-content-center">
         <MudPaper Elevation="4">
             <MudText Typo="Typo.h5">Total</MudText>
+            <MudText Typo="Typo.h5">@_total</MudText>
         </MudPaper>
     </MudItem>
 </MudGrid>
 
 @code{
+    public List<IncomeViewModel> Incomes { get; set; }
+    public List<ExpenditureViewModel> Expenditures { get; set; }
+    public List<ExpenditureViewModel> SelectedExpenditure { get; set; }
+    public List<IncomeViewModel> SelectedIncomes { get; set; }
+
     private MonthEnum _selectedMonth { get; set; }
     private DateTime _currentDate { get; set; } = DateTime.UtcNow;
     private int _selectedYear { get; set; }
 
+    private double _income{ get; set; }
+    private double _expenditure{ get; set; }
+    private double _total{ get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Expenditures = await _httpService.Get<List<ExpenditureViewModel>>("/api/Expenditure/get");
+            Incomes = await _httpService.Get<List<IncomeViewModel>>("/api/Income/get");
+            _income = Incomes.Select(x => x.Amount).Sum();
+            _expenditure = Expenditures.Select(x => x.Amount).Sum();
+            _total = Incomes.Select(x => x.Amount).Sum() - Expenditures.Select(x => x.Amount).Sum();
+        }
+        catch
+        {
+            Expenditures = new List<ExpenditureViewModel>();
+            Incomes = new List<IncomeViewModel>();
+        }
+    }
     private void ApplyFilter()
     {
-        
+        SelectedExpenditure = Expenditures.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+        SelectedIncomes = Incomes.Where(x => x.CreatedAt.Value.Month == (int)_selectedMonth && x.CreatedAt.Value.Year == _selectedYear).ToList();
+        _income = SelectedIncomes.Select(x => x.Amount).Sum();
+        _expenditure = SelectedExpenditure.Select(x => x.Amount).Sum();
     }
 }
 
